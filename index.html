@@ -38,7 +38,7 @@
     }
     table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 12px; }
     th, td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
-    th { text-align: left; font-size: 12px; color: #555; background: #fafafa; position: sticky; top: 64px; z-index: 1; }
+    th { text-align: left; font-size: 12px; color: #555; background: #fafafa; position: sticky; top: 0; z-index: 1; }
     .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
     .right { margin-left: auto; }
     .pill { background: #efefef; padding: 6px 10px; border-radius: 999px; font-weight: 800; }
@@ -107,7 +107,12 @@
       </div>
       <div>
         <label for="holztyp">Holztyp</label>
-        <input id="holztyp" autocomplete="off" placeholder="z.B. KVH" />
+        <input id="holztyp" list="holztyp-list" autocomplete="off" placeholder="SF, SH oder MF" />
+        <datalist id="holztyp-list">
+          <option value="SF">
+          <option value="SH">
+          <option value="MF">
+        </datalist>
       </div>
       <div>
         <label>Produkt (auto)</label>
@@ -204,6 +209,17 @@ document.addEventListener("DOMContentLoaded", () => {
     const holztyp = el("holztyp").value.trim();
     const holzart = el("holzart").value.trim();
     const sortierung = el("sortierung").value.trim();
+    
+    // Validierung für Holztyp
+    const validTypes = ["SF", "SH", "MF"];
+    if (holztyp && !validTypes.includes(holztyp.toUpperCase())) {
+      el("holztyp").style.borderColor = "orange";
+      el("holztyp").style.backgroundColor = "#fff3cd";
+    } else {
+      el("holztyp").style.borderColor = "";
+      el("holztyp").style.backgroundColor = "";
+    }
+    
     const parts = [holztyp, holzart, sortierung].filter(Boolean);
     produktEl.value = parts.join("-");
     return produktEl.value;
