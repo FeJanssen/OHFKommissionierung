@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kommissionierung</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: #f6f7f8; }
+    header { position: sticky; top: 0; background: white; padding: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.08); z-index: 2; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .btn {
+      border: 0; border-radius: 12px; padding: 12px 14px; font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08); background: #111; color: #fff;
+      cursor: pointer;
+    }
+    .btn.secondary { background: #fff; color: #111; border: 1px solid #ddd; box-shadow: none; }
+    .btn.danger { background: #b00020; color: #fff; border: 0; }
+    main { padding: 12px; }
+    .card { background: white; border-radius: 16px; padding: 12px; box-shadow: 0 2px 10px rgba(0,0,0,.06); margin-bottom: 12px; }
+    .title { font-size: 18px; font-weight: 800; }
+    label { font-size: 12px; font-weight: 700; color: #444; display: block; margin-bottom: 6px; }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      background: #fff;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 10px;
+    }
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: repeat(4, minmax(0,1fr)); }
+    }
+    table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 12px; }
+    th, td { padding: 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+    th { text-align: left; font-size: 12px; color: #555; background: #fafafa; position: sticky; top: 64px; z-index: 1; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .right { margin-left: auto; }
+    .pill { background: #efefef; padding: 6px 10px; border-radius: 999px; font-weight: 800; }
+    #debug { font-size: 12px; color: #666; }
+  </style>
+</head>
+
+<body>
+<header>
+  <div class="row">
+    <div class="title">Kommissionierung</div>
+    <div class="right row">
+      <span class="pill" id="kommiLabel">—</span>
+      <button class="btn secondary" id="btnNewKommi" type="button">Neue Kommissionierung</button>
+      <button class="btn secondary" id="btnExportCurrent" type="button">CSV (aktuell)</button>
+      <button class="btn" id="btnExportAll" type="button">CSV (alles)</button>
+    </div>
+  </div>
+  <div id="debug">JS lädt…</div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="row" style="justify-content: space-between;">
+      <div>
+        <div style="font-weight:800;">Neue Zeile erfassen</div>
+        <div style="color:#666; font-size:13px;">Scan → Text → Enter. Enter springt weiter.</div>
+      </div>
+      <div class="row">
+        <label style="margin:0;">
+          <span style="display:block; font-size:12px; font-weight:700; color:#444; margin-bottom:6px;">CSV Trennzeichen</span>
+          <select id="delimiter">
+            <option value=",">Komma (,)</option>
+            <option value=";">Semikolon (;)</option>
+            <option value="\t">Tab</option>
+          </select>
+        </label>
+        <button class="btn" id="btnAddRow" type="button">Zeile hinzufügen</button>
+      </div>
+    </div>
+
+    <div class="grid" style="margin-top:12px;">
+      <div>
+        <label for="laenge">Länge</label>
+        <input id="laenge" autocomplete="off" inputmode="numeric" placeholder="z.B. 4000" />
+      </div>
+      <div>
+        <label for="breite">Breite</label>
+        <input id="breite" autocomplete="off" inputmode="numeric" placeholder="z.B. 120" />
+      </div>
+      <div>
+        <label for="staerke">Stärke</label>
+        <input id="staerke" autocomplete="off" inputmode="numeric" placeholder="z.B. 45" />
+      </div>
+      <div>
+        <label for="paket">Paket</label>
+        <input id="paket" autocomplete="off" placeholder="Scan/ID" />
+      </div>
+      <div>
+        <label for="holzart">Holzart</label>
+        <input id="holzart" autocomplete="off" placeholder="z.B. Fichte" />
+      </div>
+      <div>
+        <label for="sortierung">Sortierung</label>
+        <input id="sortierung" autocomplete="off" placeholder="z.B. SI" />
+      </div>
+      <div>
+        <label for="holztyp">Holztyp</label>
+        <input id="holztyp" autocomplete="off" placeholder="z.B. KVH" />
+      </div>
+      <div>
+        <label>Produkt (auto)</label>
+        <input id="produkt" class="mono" readonly />
+        <div style="font-size:12px; color:#666; margin-top:6px;">Produkt = Holztyp - Holzart - Sortierung</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="justify-content: space-between;">
+      <div style="font-weight:800;">Erfasste Zeilen</div>
+      <button class="btn danger secondary" id="btnClearCurrent" type="button">Aktuelle Kommissionierung leeren</button>
+    </div>
+    <div style="overflow:auto; margin-top:10px; max-height: 55vh;">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Länge</th>
+            <th>Breite</th>
+            <th>Stärke</th>
+            <th>Paket</th>
+            <th>Holzart</th>
+            <th>Sortierung</th>
+            <th>Holztyp</th>
+            <th>Produkt</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const STORAGE_KEY = "kommissionierungen_v1";
+
+  const el = (id) => document.getElementById(id);
+  const debug = (msg) => { el("debug").textContent = msg; };
+
+  function nowIsoCompact() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  }
+
+  function loadState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return { kommis: [], activeId: null };
+      return JSON.parse(raw);
+    } catch {
+      return { kommis: [], activeId: null };
+    }
+  }
+
+  function saveState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  let state = loadState();
+
+  function createNewKommi() {
+    const id = `KOMM_${nowIsoCompact()}`;
+    const kommi = { id, createdAt: new Date().toISOString(), rows: [] };
+    state.kommis.unshift(kommi);
+    state.activeId = id;
+    saveState(state);
+    renderAll();
+  }
+
+  function getActiveKommi() {
+    return state.kommis.find(k => k.id === state.activeId);
+  }
+
+  // init state
+  if (!state.kommis.length) {
+    createNewKommi();
+  } else if (!state.activeId) {
+    state.activeId = state.kommis[0].id;
+    saveState(state);
+  }
+
+  const inputs = [
+    el("laenge"), el("breite"), el("staerke"), el("paket"),
+    el("holzart"), el("sortierung"), el("holztyp")
+  ];
+  const produktEl = el("produkt");
+
+  function computeProdukt() {
+    const holztyp = el("holztyp").value.trim();
+    const holzart = el("holzart").value.trim();
+    const sortierung = el("sortierung").value.trim();
+    const parts = [holztyp, holzart, sortierung].filter(Boolean);
+    produktEl.value = parts.join("-");
+    return produktEl.value;
+  }
+
+  ["holztyp","holzart","sortierung"].forEach(id => {
+    el(id).addEventListener("input", computeProdukt);
+  });
+
+  // Enter springt weiter
+  inputs.forEach((input, idx) => {
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (idx < inputs.length - 1) inputs[idx + 1].focus();
+        else el("btnAddRow").focus();
+      }
+    });
+  });
+
+  function escapeHtml(s) {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
+
+  function renderAll() {
+    const kommi = getActiveKommi();
+    el("kommiLabel").textContent = kommi ? kommi.id : "—";
+    renderTable();
+  }
+
+  function renderTable() {
+    const kommi = getActiveKommi();
+    const tb = el("tbody");
+    tb.innerHTML = "";
+    if (!kommi) return;
+
+    kommi.rows.forEach((r, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${i+1}</td>
+        <td>${escapeHtml(r.laenge)}</td>
+        <td>${escapeHtml(r.breite)}</td>
+        <td>${escapeHtml(r.staerke)}</td>
+        <td class="mono">${escapeHtml(r.paket)}</td>
+        <td>${escapeHtml(r.holzart)}</td>
+        <td>${escapeHtml(r.sortierung)}</td>
+        <td>${escapeHtml(r.holztyp)}</td>
+        <td class="mono">${escapeHtml(r.produkt)}</td>
+        <td><button class="btn secondary" type="button" data-del="${i}">Löschen</button></td>
+      `;
+      tb.appendChild(tr);
+    });
+
+    tb.querySelectorAll("button[data-del]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.getAttribute("data-del"));
+        const kommi = getActiveKommi();
+        kommi.rows.splice(idx, 1);
+        saveState(state);
+        renderTable();
+      });
+    });
+  }
+
+  function clearInputs() {
+    inputs.forEach(i => i.value = "");
+    produktEl.value = "";
+    el("laenge").focus();
+  }
+
+  function addRow() {
+    const kommi = getActiveKommi();
+    if (!kommi) return;
+
+    const row = {
+      laenge: el("laenge").value.trim(),
+      breite: el("breite").value.trim(),
+      staerke: el("staerke").value.trim(),
+      paket: el("paket").value.trim(),
+      holzart: el("holzart").value.trim(),
+      sortierung: el("sortierung").value.trim(),
+      holztyp: el("holztyp").value.trim(),
+      produkt: computeProdukt()
+    };
+
+    if (!row.paket) { alert("Bitte Paket eingeben/scanen."); el("paket").focus(); return; }
+    if (!row.produkt) { alert("Produkt ist leer. Bitte Holztyp/Holzart/Sortierung prüfen."); el("holztyp").focus(); return; }
+
+    kommi.rows.push(row);
+    saveState(state);
+    renderTable();
+    clearInputs();
+  }
+
+  // CSV
+  function csvEscape(value, delimiter) {
+    const s = String(value ?? "");
+    const needsQuotes = s.includes('"') || s.includes("\n") || s.includes("\r") || s.includes(delimiter);
+    const escaped = s.replaceAll('"', '""');
+    return needsQuotes ? `"${escaped}"` : escaped;
+  }
+
+  function buildCsv(rows, delimiter) {
+    const header = ["Länge","Breite","Stärke","Paket","Holzart","Sortierung","Holztyp","Produkt"];
+    const lines = [];
+    lines.push(header.map(h => csvEscape(h, delimiter)).join(delimiter));
+    for (const r of rows) {
+      lines.push([r.laenge,r.breite,r.staerke,r.paket,r.holzart,r.sortierung,r.holztyp,r.produkt]
+        .map(v => csvEscape(v, delimiter)).join(delimiter));
+    }
+    return lines.join("\r\n");
+  }
+
+  function downloadText(filename, text) {
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + text], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---- BUTTON WIRING (das war bei dir vermutlich das Problem) ----
+  el("btnAddRow").addEventListener("click", () => { debug("Zeile hinzugefügt."); addRow(); });
+  el("btnNewKommi").addEventListener("click", () => { debug("Neue Kommissionierung."); createNewKommi(); clearInputs(); });
+
+  el("btnClearCurrent").addEventListener("click", () => {
+    const kommi = getActiveKommi();
+    if (!kommi) return;
+    if (!confirm("Aktuelle Kommissionierung wirklich leeren?")) return;
+    kommi.rows = [];
+    saveState(state);
+    renderTable();
+    clearInputs();
+    debug("Aktuelle Kommissionierung geleert.");
+  });
+
+  el("btnExportCurrent").addEventListener("click", () => {
+    const kommi = getActiveKommi();
+    if (!kommi) return;
+    const d = el("delimiter").value === "\\t" ? "\t" : el("delimiter").value;
+    downloadText(`${kommi.id}.csv`, buildCsv(kommi.rows, d));
+    debug("CSV (aktuell) exportiert.");
+  });
+
+  el("btnExportAll").addEventListener("click", () => {
+    const d = el("delimiter").value === "\\t" ? "\t" : el("delimiter").value;
+    const header = ["Kommissionierung","Länge","Breite","Stärke","Paket","Holzart","Sortierung","Holztyp","Produkt"];
+    const lines = [header.map(h => csvEscape(h, d)).join(d)];
+    for (const k of state.kommis.slice().reverse()) {
+      for (const r of k.rows) {
+        lines.push([k.id,r.laenge,r.breite,r.staerke,r.paket,r.holzart,r.sortierung,r.holztyp,r.produkt]
+          .map(v => csvEscape(v, d)).join(d));
+      }
+    }
+    downloadText(`ALLE_KOMMISSIONIERUNGEN_${nowIsoCompact()}.csv`, lines.join("\r\n"));
+    debug("CSV (alles) exportiert.");
+  });
+
+  // Start
+  renderAll();
+  clearInputs();
+  debug("JS bereit ✅ Buttons sollten funktionieren.");
+});
+</script>
+</body>
+</html>

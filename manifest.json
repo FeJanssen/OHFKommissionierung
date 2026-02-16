@@ -1,0 +1,8 @@
+{
+  "name": "Kommissionierung",
+  "short_name": "Kommi",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111111"
+}
