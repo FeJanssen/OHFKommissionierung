@@ -103,7 +103,7 @@
       </div>
       <div>
         <label for="sortierung">Sortierung</label>
-        <input id="sortierung" autocomplete="off" placeholder="z.B. SI" />
+        <input id="sortierung" autocomplete="off" placeholder="z.B. AB" />
       </div>
       <div>
         <label for="holztyp">Holztyp</label>
@@ -229,13 +229,19 @@ document.addEventListener("DOMContentLoaded", () => {
     el(id).addEventListener("input", computeProdukt);
   });
 
-  // Enter springt weiter
+  // Enter springt weiter, bei Breite wird direkt hinzugefügt
   inputs.forEach((input, idx) => {
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
-        if (idx < inputs.length - 1) inputs[idx + 1].focus();
-        else el("btnAddRow").focus();
+        // Wenn wir bei Breite (Index 1) sind, direkt Zeile hinzufügen
+        if (idx === 1) {
+          addRow();
+        } else if (idx < inputs.length - 1) {
+          inputs[idx + 1].focus();
+        } else {
+          el("btnAddRow").focus();
+        }
       }
     });
   });
@@ -290,8 +296,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function clearInputs() {
-    inputs.forEach(i => i.value = "");
-    produktEl.value = "";
+    // Nur Länge und Breite leeren, Rest bleibt stehen
+    el("laenge").value = "";
+    el("breite").value = "";
     el("laenge").focus();
   }
 
