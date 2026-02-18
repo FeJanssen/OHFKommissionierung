@@ -229,10 +229,10 @@ document.addEventListener("DOMContentLoaded", () => {
     el(id).addEventListener("input", computeProdukt);
   });
 
-  // Enter springt weiter, bei Breite wird direkt hinzugefügt
+  // Enter/Tab springt weiter, bei Breite wird direkt hinzugefügt
   inputs.forEach((input, idx) => {
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+      if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
         // Wenn wir bei Breite (Index 1) sind, direkt Zeile hinzufügen
         if (idx === 1) {
