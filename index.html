@@ -82,15 +82,15 @@
 
     <div class="grid" style="margin-top:12px;">
       <div>
-        <label for="laenge">Länge</label>
-        <input id="laenge" autocomplete="off" inputmode="numeric" placeholder="z.B. 4000" />
+        <label for="laenge">Länge (m)</label>
+        <input id="laenge" autocomplete="off" inputmode="decimal" placeholder="z.B. 4.5" />
       </div>
       <div>
-        <label for="breite">Breite</label>
+        <label for="breite">Breite (mm)</label>
         <input id="breite" autocomplete="off" inputmode="numeric" placeholder="z.B. 120" />
       </div>
       <div>
-        <label for="staerke">Stärke</label>
+        <label for="staerke">Stärke (mm)</label>
         <input id="staerke" autocomplete="off" inputmode="numeric" placeholder="z.B. 45" />
       </div>
       <div>
@@ -246,6 +246,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // F8: Letzte Zeile löschen
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "F8") {
+      e.preventDefault();
+      const kommi = getActiveKommi();
+      if (kommi && kommi.rows.length > 0) {
+        kommi.rows.pop();
+        saveState(state);
+        renderTable();
+      }
+    }
+  });
+
   function escapeHtml(s) {
     return String(s ?? "")
       .replaceAll("&", "&amp;")
@@ -335,11 +348,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function buildCsv(rows, delimiter) {
-    const header = ["Länge","Breite","Stärke","Paket","Holzart","Sortierung","Holztyp","Produkt"];
+    const header = ["lot_length","width","thickness","lot_name","Holzart","Sortierung","product_id"];
     const lines = [];
     lines.push(header.map(h => csvEscape(h, delimiter)).join(delimiter));
     for (const r of rows) {
-      lines.push([r.laenge,r.breite,r.staerke,r.paket,r.holzart,r.sortierung,r.holztyp,r.produkt]
+      lines.push([r.laenge,r.breite,r.staerke,r.paket,r.holzart,r.sortierung,r.produkt]
         .map(v => csvEscape(v, delimiter)).join(delimiter));
     }
     return lines.join("\r\n");
