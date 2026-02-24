@@ -43,6 +43,31 @@
     .right { margin-left: auto; }
     .pill { background: #efefef; padding: 6px 10px; border-radius: 999px; font-weight: 800; }
     #debug { font-size: 12px; color: #666; }
+    
+    /* Holzart Autocomplete Dropdown */
+    .autocomplete-container { position: relative; }
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0,0,0,.15);
+      display: none;
+    }
+    .autocomplete-dropdown.show { display: block; }
+    .autocomplete-item {
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .autocomplete-item:hover { background: #f6f7f8; }
+    .autocomplete-item b { color: #111; }
   </style>
 </head>
 
@@ -97,9 +122,10 @@
         <label for="paket">Paket</label>
         <input id="paket" autocomplete="off" placeholder="Scan/ID" />
       </div>
-      <div>
+      <div class="autocomplete-container">
         <label for="holzart">Holzart</label>
-        <input id="holzart" autocomplete="off" placeholder="z.B. Fichte" />
+        <input id="holzart" autocomplete="off" placeholder="z.B. Eiche oder EI" />
+        <div id="holzart-dropdown" class="autocomplete-dropdown"></div>
       </div>
       <div>
         <label for="sortierung">Sortierung</label>
@@ -156,6 +182,52 @@ document.addEventListener("DOMContentLoaded", () => {
   const el = (id) => document.getElementById(id);
   const debug = (msg) => { el("debug").textContent = msg; };
 
+  // Holzarten-Datenbank
+  const holzarten = {
+    "AAH": "Ahorn amerik.", "AAR": "Riegelahorn Am.", "ABA": "Abachi", "ABU": "Abura",
+    "AH": "Ahorn europ.", "AHK": "Kernahorn", "AHM": "Muschelahorn", "AHR": "Riegelahorn Euro",
+    "AMA": "Amaranth", "AMB": "Amboina", "AMZ": "Amazakoue", "ANE": "Anegre",
+    "ANG": "Angelim Amargosa", "ANT": "Antolia", "APF": "Apfel", "ASP": "Aspe",
+    "BAL": "Balsa", "BAN": "Bangkirai", "BEL": "Beli", "BGK": "Buche Kern gedämpft",
+    "BI": "Birke", "BIA": "Apfelbirke", "BIE": "Eisbirke", "BIR": "Birnbaum",
+    "BIS": "Birke geschält", "BO": "Bongossi", "BPA": "Buche Palazzo", "BUB": "Bubinga",
+    "BUG": "Buche ged.", "BUP": "Buche Pfeffer", "BUK": "Buche Kern", "BUU": "Buche ung.",
+    "CEI": "Ceiba", "CH": "Cherry", "CHE": "Chenchen", "CHF": "Chicken Feed",
+    "CI": "Citola", "CP": "C-Pine", "CU": "Cumaru", "DGG": "Douglasie Geräuchert",
+    "DGL": "Douglasie", "DI": "Dibetou", "DIF": "Difou", "DOU": "DOU",
+    "EB": "Ebenholz", "EBA": "Eichebalken", "EG": "Eiche gedämpft", "EI": "Eiche",
+    "EIA": "Eiche Altholz", "EIB": "Eibe", "EIG": "Eiche geräuchert", "EIK": "Eiche Kupfer",
+    "EIR": "Roteiche", "EIS": "Eiche Silver", "EIT": "Eiche Tischplatte", "EIW": "Weißeiche",
+    "ELG": "Elsbeere ged.", "ELK": "Elsbeere Kern", "ELM": "Red Elm", "ELS": "Elsbeere",
+    "ER": "Erle", "ERA": "Erable", "ERG": "Erle gedämpft", "ESG": "Esche geaugt",
+    "ESH": "Esche hell", "ESN": "Esche natur", "EST": "Esche Tischplatte", "EUG": "Eukalyptus geräuch.",
+    "EUK": "Eukalyptus", "FAB": "Fichte Altholz Boden", "FAG": "Fichte Altholz ged.", "FAM": "Fi. Altholz Mantel",
+    "FAS": "Fi. Altholz Seiten", "FAU": "Fichte Altholz ung.", "FIA": "Fichte astig", "FIG": "Fichte ged.",
+    "FIH": "Fichte heimisch", "FIN": "Fichte nord.", "FNG": "Fichte nord. ged", "GAR": "Garapa",
+    "HEM": "Hemlock", "HIC": "Hickory", "IP": "Ipe", "ITA": "Itauba",
+    "JAM": "Jarrah Maser", "JAR": "Jarrah", "JAT": "Jatoba", "JUM": "Jumbo Wood",
+    "KAM": "Kambala / Iroko", "KAS": "Kastanie", "KE": "Kelo", "KI": "Kiefer",
+    "KIR": "Kirsche europ.", "KMA": "Khaya-Mahagoni", "KO": "Koto", "LA": "Laubholz",
+    "LI": "Linde", "LIM": "Limba", "LÄ": "Lärche", "LÄR": "Lärche geräuchert",
+    "LÄS": "Lärche sibirisch", "MA": "Macore", "MAC": "Macassar", "MAD": "Mandioqueira",
+    "MAH": "Mahagoni", "MAM": "Madrona Maser", "MAN": "Mansonia / Bete", "MAR": "Maroni",
+    "MAS": "Massaranduba", "MEB": "Merbau", "MER": "Meranti", "MU": "Mutenge",
+    "MUK": "Mukulungu", "MY": "Myrte", "NA": "Nadelholz", "NU": "Nussbaum europ.",
+    "NUA": "Schwarznuss", "OKO": "Okoume", "OL": "Olive", "OR": "Oregon-Pine",
+    "PA": "Pappel", "PAD": "Padouk", "PAL": "Palisander", "PEC": "Pecan Nuß",
+    "PI": "Pinie", "PLA": "Platane", "PPI": "Pitch Pine", "RA": "Ramin",
+    "RGE": "Robinie geräuchert", "RO": "Rosenholz", "ROG": "Robinie ged", "ROU": "Robine unged.",
+    "RÜ": "Rüster", "RÜG": "Rüster ged.", "SA": "Sapeli-Mahagoni", "SAB": "Sapeli-Mahagoni bes.",
+    "SAS": "Sassafras", "SAT": "Satin Nuß", "SEN": "Sen", "SI": "Sipo-Mahagoni",
+    "SIB": "Sipo-Mahagoni bes.", "STI": "Sapeli Tischplatte", "SUC": "Sucupira", "TA": "Tanne",
+    "TE": "Teak", "TEB": "Teak besäumt", "TH": "Thuja", "TIN": "Tineo",
+    "TU": "Whitewood / Tulip", "VAH": "Vogelaugenahorn", "VAV": "Vavona", "VIO": "Violett",
+    "WB": "Hainbuche", "WBS": "Hainbuche Silver", "WE": "Wenge", "WEB": "Wenge bes.",
+    "WEW": "Wenge weiß ( Lathi )", "YAY": "Yaya", "ZE": "Zebrano", "ZEB": "Zebrano besäumt",
+    "ZEC": "Zeder (Cedro)", "ZED": "Zeder", "ZEL": "Zeder Libanon", "ZEW": "Western Red Cedar",
+    "ZI": "Zirbe", "ZIG": "Zirbe gedämpft", "ZIR": "Ziricote", "ZIT": "Zitrone", "ZW": "Zwetschge"
+  };
+
   function nowIsoCompact() {
     const d = new Date();
     const pad = (n) => String(n).padStart(2, "0");
@@ -205,6 +277,93 @@ document.addEventListener("DOMContentLoaded", () => {
   ];
   const produktEl = el("produkt");
 
+  // Holzart Autocomplete
+  const holzartInput = el("holzart");
+  const holzartDropdown = el("holzart-dropdown");
+  
+  holzartInput.addEventListener("input", (e) => {
+    // Automatisch in Großbuchstaben umwandeln
+    const cursorPos = e.target.selectionStart;
+    e.target.value = e.target.value.toUpperCase();
+    e.target.setSelectionRange(cursorPos, cursorPos);
+    
+    const value = e.target.value.trim();
+    if (value.length === 0) {
+      holzartDropdown.classList.remove("show");
+      computeProdukt();
+      return;
+    }
+
+    // Suche nach passenden Holzarten
+    const matches = [];
+    for (const [abbr, name] of Object.entries(holzarten)) {
+      if (abbr.includes(value) || name.toUpperCase().includes(value)) {
+        matches.push({ abbr, name });
+      }
+    }
+
+    if (matches.length === 0) {
+      holzartDropdown.classList.remove("show");
+      computeProdukt();
+      return;
+    }
+
+    // Dropdown befüllen
+    holzartDropdown.innerHTML = matches.slice(0, 10).map(m => 
+      `<div class="autocomplete-item" data-abbr="${m.abbr}">
+        <b>${m.abbr}</b> - ${m.name}
+      </div>`
+    ).join("");
+    holzartDropdown.classList.add("show");
+    computeProdukt();
+  });
+
+  // Enter/Tab: Prüfe auf exakte Übereinstimmung und ersetze durch Abkürzung
+  holzartInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      const value = holzartInput.value.trim();
+      
+      // Prüfen ob exakte Übereinstimmung mit vollem Namen existiert
+      for (const [abbr, name] of Object.entries(holzarten)) {
+        if (name.toUpperCase() === value) {
+          e.preventDefault();
+          holzartInput.value = abbr;
+          holzartDropdown.classList.remove("show");
+          computeProdukt();
+          
+          // Bei Enter/Tab zum nächsten Feld springen
+          const idx = inputs.indexOf(holzartInput);
+          if (idx !== -1 && idx < inputs.length - 1) {
+            inputs[idx + 1].focus();
+          }
+          return;
+        }
+      }
+      
+      // Kein Match gefunden, Dropdown schließen
+      holzartDropdown.classList.remove("show");
+    }
+  });
+
+  // Auswahl aus Dropdown
+  holzartDropdown.addEventListener("click", (e) => {
+    const item = e.target.closest(".autocomplete-item");
+    if (item) {
+      const abbr = item.getAttribute("data-abbr");
+      holzartInput.value = abbr;
+      holzartDropdown.classList.remove("show");
+      computeProdukt();
+      holzartInput.focus();
+    }
+  });
+
+  // Dropdown schließen bei Klick außerhalb
+  document.addEventListener("click", (e) => {
+    if (!holzartInput.contains(e.target) && !holzartDropdown.contains(e.target)) {
+      holzartDropdown.classList.remove("show");
+    }
+  });
+
   function computeProdukt() {
     const holztyp = el("holztyp").value.trim();
     const holzart = el("holzart").value.trim();
@@ -227,6 +386,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   ["holztyp","holzart","sortierung"].forEach(id => {
     el(id).addEventListener("input", computeProdukt);
+  });
+
+  // Sortierung und Holztyp immer in Großbuchstaben umwandeln
+  ["sortierung", "holztyp"].forEach(id => {
+    el(id).addEventListener("input", (e) => {
+      const cursorPos = e.target.selectionStart;
+      e.target.value = e.target.value.toUpperCase();
+      e.target.setSelectionRange(cursorPos, cursorPos);
+    });
   });
 
   // Enter/Tab springt weiter, bei Breite wird direkt hinzugefügt
