@@ -116,7 +116,7 @@
       </div>
       <div>
         <label for="staerke">Stärke (mm)</label>
-        <input id="staerke" autocomplete="off" inputmode="numeric" placeholder="z.B. 45" />
+        <input id="staerke" autocomplete="off" inputmode="numeric" placeholder="z.B. 7" />
       </div>
       <div>
         <label for="paket">Paket</label>
@@ -498,7 +498,6 @@ document.addEventListener("DOMContentLoaded", () => {
       produkt: computeProdukt()
     };
 
-    if (!row.paket) { alert("Bitte Paket eingeben/scanen."); el("paket").focus(); return; }
     if (!row.produkt) { alert("Produkt ist leer. Bitte Holztyp/Holzart/Sortierung prüfen."); el("holztyp").focus(); return; }
 
     kommi.rows.push(row);
@@ -539,7 +538,7 @@ document.addEventListener("DOMContentLoaded", () => {
     URL.revokeObjectURL(url);
   }
 
-  // ---- BUTTON WIRING (das war bei dir vermutlich das Problem) ----
+  // ---- vermutliches Problem nach Tests nachschauen ob das Problem gelöst ist ----
   el("btnAddRow").addEventListener("click", () => { debug("Zeile hinzugefügt."); addRow(); });
   el("btnNewKommi").addEventListener("click", () => { debug("Neue Kommissionierung."); createNewKommi(); clearInputs(); });
 
@@ -579,7 +578,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Start
   renderAll();
   clearInputs();
-  debug("JS bereit ✅ Buttons sollten funktionieren.");
+  debug("Osenstätter GmbH Holz und Furnier");
 });
 </script>
 </body>
