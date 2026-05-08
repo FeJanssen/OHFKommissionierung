@@ -386,7 +386,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return produktEl.value;
   }
 
-  ["holztyp","holzart","sortierung"].forEach(id => {
+  ["holztyp","holzart","sortierung","staerke"].forEach(id => {
     el(id).addEventListener("input", computeProdukt);
   });
 
