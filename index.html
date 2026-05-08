@@ -369,9 +369,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const holztyp = el("holztyp").value.trim();
     const holzart = el("holzart").value.trim();
     const sortierung = el("sortierung").value.trim();
+    const staerke = el("staerke").value.trim();
     
     // Validierung für Holztyp
-    const validTypes = ["SF", "SH", "MF"];
+    const validTypes = ["SF", "SH", "MF", "SFV"];
     if (holztyp && !validTypes.includes(holztyp.toUpperCase())) {
       el("holztyp").style.borderColor = "orange";
       el("holztyp").style.backgroundColor = "#fff3cd";
@@ -380,7 +381,7 @@ document.addEventListener("DOMContentLoaded", () => {
       el("holztyp").style.backgroundColor = "";
     }
     
-    const parts = [holztyp, holzart, sortierung].filter(Boolean);
+    const parts = [holztyp, holzart, sortierung, staerke].filter(Boolean);
     produktEl.value = parts.join("-");
     return produktEl.value;
   }
