@@ -173,6 +173,12 @@
         <tbody id="tbody"></tbody>
       </table>
     </div>
+    <div style="margin-top: 12px; padding: 12px; background: #f6f7f8; border-radius: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-weight: 700; color: #444;">Gesamt Sägefurnier (SFV):</div>
+        <div style="font-size: 18px; font-weight: 800;" id="sfvTotal">0 m²</div>
+      </div>
+    </div>
   </div>
 </main>
 
@@ -476,6 +482,18 @@ document.addEventListener("DOMContentLoaded", () => {
         renderTable();
       });
     });
+
+    // Berechne Gesamt-Quadratmeter für SFV
+    let totalSFV = 0;
+    kommi.rows.forEach(r => {
+      if (r.holztyp && r.holztyp.toUpperCase() === "SFV") {
+        const laenge = parseFloat(r.laenge) || 0; // in Metern
+        const breite = parseFloat(r.breite) || 0; // in mm
+        const breiteM = breite / 1000; // Umrechnung in Meter
+        totalSFV += laenge * breiteM;
+      }
+    });
+    el("sfvTotal").textContent = totalSFV.toFixed(2) + " m²";
   }
 
   function clearInputs() {
