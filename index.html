@@ -174,8 +174,10 @@
       </table>
     </div>
     <div style="margin-top: 12px; padding: 12px; background: #f6f7f8; border-radius: 12px;">
-      <div style="display: flex; justify-content: space-between; align-items: center;">
-        <div style="font-weight: 700; color: #444;">Gesamt Sägefurnier (SFV):</div>
+      <div style="font-weight: 700; color: #444; margin-bottom: 8px;">Gesamt Sägefurnier (SFV):</div>
+      <div id="sfvBySortierung" style="font-size: 14px; color: #666; margin-bottom: 8px;"></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 2px solid #ddd;">
+        <div style="font-weight: 700; color: #111;">Gesamt:</div>
         <div style="font-size: 18px; font-weight: 800;" id="sfvTotal">0 m²</div>
       </div>
     </div>
@@ -485,14 +487,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Berechne Gesamt-Quadratmeter für SFV
     let totalSFV = 0;
+    const sfvBySortierung = {};
+    
     kommi.rows.forEach(r => {
       if (r.holztyp && r.holztyp.toUpperCase() === "SFV") {
         const laenge = parseFloat(r.laenge) || 0; // in Metern
         const breite = parseFloat(r.breite) || 0; // in mm
         const breiteM = breite / 1000; // Umrechnung in Meter
-        totalSFV += laenge * breiteM;
+        const qm = laenge * breiteM;
+        totalSFV += qm;
+        
+        // Summiere nach Sortierung
+        const sortierung = r.sortierung ? r.sortierung.trim().toUpperCase() : "Ohne";
+        sfvBySortierung[sortierung] = (sfvBySortierung[sortierung] || 0) + qm;
       }
     });
+    
+    // Zeige Quadratmeter pro Sortierung an
+    const sortierungText = Object.keys(sfvBySortierung)
+      .sort()
+      .map(sort => `${sort}: ${sfvBySortierung[sort].toFixed(2)} m²`)
+      .join(" | ");
+    el("sfvBySortierung").textContent = sortierungText || "—";
     el("sfvTotal").textContent = totalSFV.toFixed(2) + " m²";
   }
 
